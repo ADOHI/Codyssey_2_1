@@ -135,13 +135,28 @@ def main() -> None:
     section("3-2. 데코레이터: --verbose 로 실행 로그/시간 확인")
     run("search", "--type", "income", "--verbose")
 
-    section("5. 보너스: 반복 내역 / 백업 / 표 정렬")
+    section("5. 보너스: 반복 내역 / 백업과 복원 / 표 정렬")
     run("recurring", "add", inputs=["31", "expense", "rent", "500000", "월세(반복)", ""], note="매월 31일")
     run("recurring", "list")
     run("recurring", "apply", "--month", "2024-02", note="2월엔 31일이 없음 → 말일(29일)로 보정")
     run("recurring", "apply", "--month", "2024-02", note="다시 실행해도 중복 생성 안 함")
     run("backup")
-    print("\n[백업 폴더]", ", ".join(p.name for p in (DATA / "backups").iterdir()))
+    run("delete", "--id", "TX-000002", note="백업 뒤에 실수로 월급 내역을 지움")
+    run("restore", note="가장 최근 백업으로 되돌리기 (되돌리기 전 상태도 자동 백업)")
+    run("search", "--type", "income", note="지웠던 TX-000002 가 돌아옴")
+    run("restore", "--list")
+
+    section("2-3. 수정 도중 중단된 상황: 원본은 그대로, 다음 실행 때 안내")
+    (DATA / "transactions.jsonl.tmp").write_text('{"id": "TX-0000', encoding="utf-8")
+    print("\n[상황 재현] 수정 중 전원이 꺼져 임시 파일(transactions.jsonl.tmp)만 남은 상태를 만듦")
+    run("list", "--limit", "2", note="[안내] 가 한 번 나오고 데이터는 그대로")
+
+    section("2-3. add 도중 중단된 상황: 잘린 마지막 줄만 떼어 내고 나머지는 보존")
+    with (DATA / "transactions.jsonl").open("a", encoding="utf-8") as f:
+        f.write('{"id": "TX-000099", "type": "expen')
+    print("\n[상황 재현] 거래를 추가하다 전원이 꺼져 마지막 줄이 중간에서 끊긴 상태를 만듦")
+    run("list", "--limit", "2", note="끊긴 줄을 떼어 내고 무엇이 빠졌는지 안내")
+    run("list", "--limit", "2", note="다시 실행하면 안내 없이 정상")
 
     print(f"\n시연 끝. 사용한 데이터는 {DATA.relative_to(ROOT)}/ 에 남아 있습니다 (다시 실행하면 초기화).")
 

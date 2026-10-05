@@ -111,7 +111,7 @@
 
 | 용어 | 쉬운 설명 | 이 프로젝트에서 |
 | --- | --- | --- |
-| 테스트 | 코드가 기대대로 동작하는지 **코드로** 확인하는 것 | `tests/test_app.py` 16개 |
+| 테스트 | 코드가 기대대로 동작하는지 **코드로** 확인하는 것 | `tests/test_app.py` 21개 |
 | 종단(E2E) 테스트 | 사용자가 쓰는 것처럼 처음부터 끝까지 실행해 보는 테스트 | 실제 `main()` 을 명령 인자로 실행 |
 | 병목 | 전체를 느리게 만드는 **가장 느린 부분** | 10만 건일 때 파일 전체 읽기 |
 | 프로파일링 | 어느 코드가 시간을 얼마나 쓰는지 재는 것 | 날짜 검증이 읽기 시간의 절반 이상 |
@@ -245,7 +245,7 @@ def handle_errors(func):
 
 **이유**: 거래에 `tags` 리스트와 숫자 `amount` 가 있어 타입이 보존되는 쪽이 코드가 단순합니다. 그리고 과제의 핵심인 "제너레이터 스트리밍"에 한 줄 = 한 건 구조가 정확히 맞습니다. 엑셀이 필요할 때는 `export` 로 CSV를 뽑으면 됩니다.
 
-> 코드: [`iter_records`](../budget_app/storage.py#L35-L55) · [`append`](../budget_app/storage.py#L57-L60)
+> 코드: [`iter_records`](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records") · [`append`](../budget_app/storage.py#L105-L112 "sym:JsonlFile.append")
 
 <a id="c-update"></a>
 ### 선택 2. update 방식
@@ -257,7 +257,7 @@ def handle_errors(func):
 
 **이유**: 수정은 보통 "한두 필드만" 바꿉니다. 옵션 방식이 그 상황에 가장 짧고, 지정하지 않은 필드는 그대로 둔다는 규칙이 명확합니다.
 
-> 코드: [`update_transaction`](../budget_app/service.py#L186-L215)
+> 코드: [`update_transaction`](../budget_app/service.py#L208-L237 "sym:BudgetService.update_transaction")
 
 <a id="c-category-init"></a>
 ### 선택 3. 카테고리가 비어 있을 때
@@ -269,7 +269,7 @@ def handle_errors(func):
 
 **이유**: 처음 실행한 사람이 한 번에 거래를 추가할 수 있어야 합니다. 필요 없는 카테고리는 `category remove` 로 지울 수 있어 단점이 작습니다.
 
-> 코드: [`CategoryStore.ensure`](../budget_app/storage.py#L136-L142)
+> 코드: [`CategoryStore.ensure`](../budget_app/storage.py#L188-L194 "sym:CategoryStore.ensure")
 
 <a id="c-category-remove"></a>
 ### 선택 4. 사용 중인 카테고리 삭제
@@ -283,7 +283,7 @@ def handle_errors(func):
 
 **이유**: "실수로 지워서 데이터가 깨지는 일"은 막되, 정리하고 싶은 사용자에게는 길을 열어 둡니다. 오류 메시지에 해결 명령을 그대로 적어 줍니다.
 
-> 코드: [`remove_category`](../budget_app/service.py#L134-L161)
+> 코드: [`remove_category`](../budget_app/service.py#L156-L183 "sym:BudgetService.remove_category")
 
 <a id="c-rewrite"></a>
 ### 선택 5. 수정/삭제 시 파일을 고치는 방법
@@ -319,7 +319,7 @@ def handle_errors(func):
 
 **이유**: 가계부에서 가장 나쁜 일은 데이터가 날아가는 것입니다. 속도보다 안전을 우선했습니다. 느려지는 문제는 [EVALUATION 4-2](EVALUATION.md#4-2-거래가-10만-건으로-늘어난다면-현재-구조에서-병목이-어디이며-어떻게-개선할지-설명할-수-있는가)의 개선안(월별 파일 분할)으로 풀 수 있습니다.
 
-> 코드: [`rewrite`](../budget_app/storage.py#L62-L78) · [`rewrite_each`](../budget_app/storage.py#L110-L129)
+> 코드: [`rewrite`](../budget_app/storage.py#L114-L130 "sym:JsonlFile.rewrite") · [`rewrite_each`](../budget_app/storage.py#L162-L181 "sym:TransactionRepository.rewrite_each")
 
 <a id="c-read"></a>
 ### 선택 6. 파일을 읽는 방법
@@ -331,7 +331,7 @@ def handle_errors(func):
 
 **이유**: 거래는 계속 쌓이는 데이터입니다. 10만 건 실측에서 스트리밍 명령은 0.3MB, 결과를 전부 올리는 경우는 26.8MB였습니다.
 
-> 코드: [`iter_records`](../budget_app/storage.py#L35-L55) · [`iter_all`](../budget_app/storage.py#L85-L93)
+> 코드: [`iter_records`](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records") · [`iter_all`](../budget_app/storage.py#L137-L145 "sym:TransactionRepository.iter_all")
 
 <a id="c-latest"></a>
 ### 선택 7. "최신순 N건"을 구하는 방법
@@ -344,7 +344,7 @@ def handle_errors(func):
 
 **이유**: 과거 날짜의 거래도 나중에 추가할 수 있으므로 "파일 끝 = 최신"이 아닙니다. 정확성을 지키면서 메모리를 아끼는 방법이 힙입니다.
 
-> 코드: [`recent`](../budget_app/service.py#L229-L233)
+> 코드: [`recent`](../budget_app/service.py#L251-L255 "sym:BudgetService.recent")
 
 <a id="c-model"></a>
 ### 선택 8. 거래 데이터를 담는 방법
@@ -357,7 +357,7 @@ def handle_errors(func):
 
 **이유**: 필드 목록이 곧 문서가 되고, `tx.amount` 의 오타는 에디터가 바로 알려 줍니다. 자동 생성된 비교(`==`) 덕분에 "값이 바뀌었는지"를 한 줄로 확인합니다.
 
-> 코드: [`Transaction`](../budget_app/models.py#L72-L95)
+> 코드: [`Transaction`](../budget_app/models.py#L72-L95 "sym:Transaction")
 
 <a id="c-types"></a>
 ### 선택 9. 날짜와 금액의 타입
@@ -367,7 +367,7 @@ def handle_errors(func):
 | 날짜 | **문자열 `YYYY-MM-DD`** | `date` 객체 | JSON에 그대로 저장되고, 이 형식은 **문자열 비교가 곧 날짜 비교**라 기간 검색이 간단함. 대신 입력 때 형식을 엄격히 검증 |
 | 금액 | **정수 `int`** | 소수 `float` | 원화는 소수점이 없고, `float` 는 `0.1 + 0.2 = 0.30000000000000004` 같은 오차가 있어 돈 계산에 부적합 |
 
-> 코드: [`parse_date`](../budget_app/models.py#L20-L28) · [`parse_amount`](../budget_app/models.py#L48-L55)
+> 코드: [`parse_date`](../budget_app/models.py#L20-L28 "sym:parse_date") · [`parse_amount`](../budget_app/models.py#L48-L55 "sym:parse_amount")
 
 <a id="c-id"></a>
 ### 선택 10. id를 만드는 방법
@@ -381,7 +381,7 @@ def handle_errors(func):
 
 **이유**: 사용자가 id를 직접 입력하므로 `TX-000012` 처럼 짧아야 합니다. 느려지는 문제는 데이터가 아주 커졌을 때의 개선 과제로 남겼습니다.
 
-> 코드: [`next_number`](../budget_app/storage.py#L95-L98)
+> 코드: [`next_number`](../budget_app/storage.py#L147-L150 "sym:TransactionRepository.next_number")
 
 <a id="c-error"></a>
 ### 선택 11. 오류를 다루는 방법
@@ -395,7 +395,7 @@ def handle_errors(func):
 
 **이유**: 문제가 생긴 곳은 "무엇이 왜 잘못됐는지"만 알고, 화면에 어떻게 보여 줄지는 몰라도 됩니다. 두 일을 분리한 것입니다.
 
-> 코드: [`AppError`](../budget_app/errors.py#L4-L13) · [`handle_errors`](../budget_app/decorators.py#L19-L40)
+> 코드: [`AppError`](../budget_app/errors.py#L4-L13 "sym:AppError") · [`handle_errors`](../budget_app/decorators.py#L19-L40 "sym:handle_errors")
 
 <a id="c-argparse"></a>
 ### 선택 12. 명령줄을 해석하는 방법
@@ -408,7 +408,7 @@ def handle_errors(func):
 
 **이유**: "모든 명령이 `--help` 를 지원"이라는 요구를 가장 확실하게 만족합니다.
 
-> 코드: [`build_parser`](../budget_app/cli.py#L207-L295)
+> 코드: [`build_parser`](../budget_app/cli.py#L220-L312 "sym:build_parser")
 
 <a id="c-import"></a>
 ### 선택 13. import 중 잘못된 행 처리
@@ -421,7 +421,7 @@ def handle_errors(func):
 
 단, 파일 자체가 잘못된 경우(헤더 불량, 파일 없음, 인코딩 오류)는 **전체 거부**합니다.
 
-> 코드: [`import_csv`](../budget_app/service.py#L297-L333) · 자세한 설명: [EVALUATION 4-3](EVALUATION.md#4-3-import-csv에-일부-깨진-행이-섞이면-어떻게-처리해-사용자-신뢰를-지킬지부분-성공롤백리포트-설명할-수-있는가)
+> 코드: [`import_csv`](../budget_app/service.py#L319-L355 "sym:BudgetService.import_csv") · 자세한 설명: [EVALUATION 4-3](EVALUATION.md#4-3-import-csv에-일부-깨진-행이-섞이면-어떻게-처리해-사용자-신뢰를-지킬지부분-성공롤백리포트-설명할-수-있는가)
 
 <a id="c-reuse"></a>
 ### 선택 14. 공통 파일 기능을 나누는 방법
@@ -432,7 +432,7 @@ def handle_errors(func):
 | 상속 (`class TransactionRepository(JsonlFile)`) | 코드가 짧음 | "거래 저장소는 JSONL 파일이다"라는 관계가 굳어져 포맷 교체가 어려움 |
 | **포함 (저장소가 `JsonlFile` 을 하나 가짐)** | 중복 없음, 저장소는 "어떻게 저장되는지"를 몰라도 됨 | `self.file.` 을 한 번 더 거침 |
 
-> 코드: [`JsonlFile`](../budget_app/storage.py#L21-L78) · [`TransactionRepository`](../budget_app/storage.py#L81-L83)
+> 코드: [`JsonlFile`](../budget_app/storage.py#L21-L130 "sym:JsonlFile") · [`TransactionRepository`](../budget_app/storage.py#L133-L135 "span:TransactionRepository..TransactionRepository.__init__")
 
 <a id="c-recurring"></a>
 ### 선택 15. 반복 내역의 중복 방지
@@ -444,7 +444,7 @@ def handle_errors(func):
 | 거래에 전용 필드 추가 | 깔끔 | 과제가 정한 거래 필드 구성을 바꿔야 함 |
 | **생성된 거래에 `recurring:RC-0001` 태그** | 기존 필드만 사용, 거래를 지우면 다시 생성 가능, `search --tag` 로 찾을 수 있음 | 사용자가 태그를 직접 지우면 중복 생성 가능 |
 
-> 코드: [`apply_recurring`](../budget_app/service.py#L366-L402)
+> 코드: [`apply_recurring`](../budget_app/service.py#L406-L442 "sym:BudgetService.apply_recurring")
 
 ---
 
@@ -460,206 +460,231 @@ def handle_errors(func):
 **Q2. 왜 한 파일에 다 쓰지 않고 나눴나요?**
 바뀌는 이유가 다르기 때문입니다. 출력 문구를 바꾸는 일과 저장 포맷을 바꾸는 일이 서로 영향을 주지 않습니다. 또 서비스 계층에 `print`/`input` 이 없어서 테스트하기 쉽습니다.
 
-> 코드: [`Summary` (서비스가 돌려주는 결과)](../budget_app/service.py#L64-L83) · [`cmd_summary` (출력만 담당)](../budget_app/cli.py#L82-L103)
+> 코드: [`Summary` (서비스가 돌려주는 결과)](../budget_app/service.py#L72-L91 "sym:Summary") · [`cmd_summary` (출력만 담당)](../budget_app/cli.py#L82-L103 "sym:cmd_summary")
 
 **Q3. 명령 하나가 실행되는 흐름을 따라가 보세요. (예: `delete --id TX-000003`)**
 `__main__.py` → `cli.main()` (`@handle_errors` 로 감싸져 있음) → argparse가 `delete` 와 `id` 를 해석 → `BudgetService` 생성, `initialize()` 로 파일 확인 → `cmd_delete` → `service.delete_transaction()` 이 먼저 id가 있는지 확인(없으면 `AppError`) → `repository.rewrite_each()` 가 한 줄씩 읽으며 해당 id만 빼고 임시 파일에 기록 → `os.replace` 로 교체 → 결과 출력, 0 반환 → `sys.exit(0)`.
 
-> 코드: [`__main__`](../budget_app/__main__.py#L7-L11) · [`main`](../budget_app/cli.py#L298-L307) · [`cmd_delete`](../budget_app/cli.py#L145-L147) · [`delete_transaction`](../budget_app/service.py#L217-L221) · [`rewrite_each`](../budget_app/storage.py#L110-L129) · [`rewrite`](../budget_app/storage.py#L62-L78)
+> 코드: [`__main__`](../budget_app/__main__.py#L7-L11 "at:0,4:if __name__ == &quot;__main__&quot;:") · [`main`](../budget_app/cli.py#L315-L324 "sym:main") · [`cmd_delete`](../budget_app/cli.py#L145-L147 "sym:cmd_delete") · [`delete_transaction`](../budget_app/service.py#L239-L243 "sym:BudgetService.delete_transaction") · [`rewrite_each`](../budget_app/storage.py#L162-L181 "sym:TransactionRepository.rewrite_each") · [`rewrite`](../budget_app/storage.py#L114-L130 "sym:JsonlFile.rewrite")
 
 **Q4. 클래스는 무엇이 있고 각각 무슨 일을 하나요?**
 모델 `Transaction`/`Budget`/`Recurring`, 파일 도구 `JsonlFile`, 파일별 저장소 `TransactionRepository`/`CategoryStore`/`BudgetStore`/`RecurringStore`, 규칙을 묶는 `BudgetService`, 검색 조건 `SearchFilter`, 결과 묶음 `Summary`/`ImportResult`, 오류 `AppError` 입니다.
 
-> 코드: [모델 3개](../budget_app/models.py#L72-L114) · [`JsonlFile`](../budget_app/storage.py#L21-L78) · [저장소 4개](../budget_app/storage.py#L81-L187) · [`BudgetService`](../budget_app/service.py#L97-L103) · [`SearchFilter`·`Summary`·`ImportResult`](../budget_app/service.py#L35-L90)
+> 코드: [모델 3개](../budget_app/models.py#L72-L114 "span:Transaction..Recurring") · [`JsonlFile`](../budget_app/storage.py#L21-L130 "sym:JsonlFile") · [저장소 4개](../budget_app/storage.py#L133-L239 "span:TransactionRepository..RecurringStore") · [`BudgetService`](../budget_app/service.py#L105-L111 "span:BudgetService..BudgetService.__init__") · [`SearchFilter`·`Summary`·`ImportResult`](../budget_app/service.py#L43-L98 "span:SearchFilter..ImportResult")
 
 ## B. 저장
 
 **Q5. 왜 CSV가 아니라 JSONL인가요?**
 `tags` 가 리스트라서입니다. CSV에 넣으려면 쉼표 구분 문자열로 바꿨다 되돌려야 하고, 금액도 문자열로 읽힙니다. JSONL은 타입이 그대로 보존되고, 한 줄이 한 건이라 한 줄씩 읽는 제너레이터와 딱 맞습니다. 추가도 파일 끝에 한 줄만 붙이면 됩니다.
 
-> 코드: [`iter_records`](../budget_app/storage.py#L35-L55) · [`append`](../budget_app/storage.py#L57-L60) · [`Transaction`](../budget_app/models.py#L72-L95)
+> 코드: [`iter_records`](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records") · [`append`](../budget_app/storage.py#L105-L112 "sym:JsonlFile.append") · [`Transaction`](../budget_app/models.py#L72-L95 "sym:Transaction")
 
 **Q6. 저장 파일은 몇 개이고 왜 나눴나요?**
 `transactions`, `categories`, `budgets`, `recurring` 4개입니다. 성격과 변경 빈도가 다른 데이터를 나누면, 거래를 수정할 때 예산 파일을 건드릴 일이 없고 파일 하나가 손상돼도 나머지는 무사합니다.
 
-> 코드: [transactions](../budget_app/storage.py#L81-L83) · [categories](../budget_app/storage.py#L132-L134) · [budgets](../budget_app/storage.py#L154-L156) · [recurring](../budget_app/storage.py#L171-L173)
+> 코드: [transactions](../budget_app/storage.py#L133-L135 "span:TransactionRepository..TransactionRepository.__init__") · [categories](../budget_app/storage.py#L184-L186 "span:CategoryStore..CategoryStore.__init__") · [budgets](../budget_app/storage.py#L206-L208 "span:BudgetStore..BudgetStore.__init__") · [recurring](../budget_app/storage.py#L223-L225 "span:RecurringStore..RecurringStore.__init__")
 
 **Q7. 처음 실행하면 어떻게 되나요?**
 `initialize()` 가 없는 파일을 만들고 안내를 출력합니다. 카테고리가 비어 있으면 기본 5개를 만듭니다(안 A). 바로 `add` 를 쓸 수 있게 하기 위해서입니다.
 
-> 코드: [`initialize`](../budget_app/service.py#L105-L113) · [`CategoryStore.ensure`](../budget_app/storage.py#L136-L142) · [테스트](../tests/test_app.py#L51-L57)
+> 코드: [`initialize`](../budget_app/service.py#L113-L135 "sym:BudgetService.initialize") · [`CategoryStore.ensure`](../budget_app/storage.py#L188-L194 "sym:CategoryStore.ensure") · [테스트](../tests/test_app.py#L51-L57 "sym:AppTest.test_first_run_creates_files_and_default_categories")
 
 **Q8. id는 어떻게 만들고, 유일함은 어떻게 보장하나요?**
 파일을 한 번 훑어 가장 큰 번호를 찾고 +1 해서 `TX-000001` 형식으로 만듭니다. "개수 + 1" 이 아니라 "최댓값 + 1" 이라, 중간 거래를 삭제해도 남아 있는 id와 겹치지 않습니다. (마지막 거래를 지운 직후에는 그 번호가 다시 쓰일 수 있습니다. 완전한 재사용 금지가 필요하면 마지막 번호를 별도 파일에 저장해야 합니다.)
 
-> 코드: [`next_number`](../budget_app/storage.py#L95-L98) · [`format_id`](../budget_app/storage.py#L100-L102) · [테스트](../tests/test_app.py#L138-L139)
+> 코드: [`next_number`](../budget_app/storage.py#L147-L150 "sym:TransactionRepository.next_number") · [`format_id`](../budget_app/storage.py#L152-L154 "sym:TransactionRepository.format_id") · [테스트](../tests/test_app.py#L138-L139 "at:0,1:# 삭제 후에도 id 는 재사용되지 않고 최댓값 다음 번호가 나온다.")
 
 **Q9. update/delete는 파일에서 어떻게 처리하나요? 왜 그 줄만 고치지 않나요?**
 파일은 바이트 배열이라 "중간에 끼워 넣기/빼기" 연산이 없습니다. 줄 길이가 달라지면 그 뒤 내용을 전부 옮겨 써야 해서 제자리 수정도 O(n)이고, 쓰는 도중 꺼지면 반쯤 바뀐 줄이 남습니다(길이가 같을 때만 그 위치를 덮어쓰는 O(1) 수정이 가능). 같은 O(n)이라면 안전한 쪽이 낫기 때문에 전체를 다시 쓰되, 임시 파일에 쓰고 `os.replace` 로 교체합니다. 읽기는 제너레이터라 다시 쓰는 동안에도 메모리에는 한 줄씩만 있습니다.
 
-> 코드: [`rewrite_each`](../budget_app/storage.py#L110-L129) · [`rewrite`](../budget_app/storage.py#L62-L78) · 자세한 비교: [선택 5](#c-rewrite)
+> 코드: [`rewrite_each`](../budget_app/storage.py#L162-L181 "sym:TransactionRepository.rewrite_each") · [`rewrite`](../budget_app/storage.py#L114-L130 "sym:JsonlFile.rewrite") · 자세한 비교: [선택 5](#c-rewrite)
 
 **Q10. 쓰는 도중 전원이 꺼지면요?**
-교체 전이면 원본이 그대로이고 `.tmp` 만 남습니다. `os.replace` 는 운영체제가 한 동작으로 처리하므로 "반쯤 바뀐 파일"은 생기지 않습니다. 디스크에 실제로 내려가도록 교체 전에 `flush` + `fsync` 를 합니다.
+교체 전이면 원본이 그대로이고 `.tmp` 만 남습니다. `os.replace` 는 운영체제가 한 동작으로 처리하므로 "반쯤 바뀐 파일"은 생기지 않습니다. 디스크에 실제로 내려가도록 교체 전에 `flush` + `fsync` 를 합니다. 남은 `.tmp` 는 다음 실행 때 발견해 지우고 "이전 수정이 중단되어 반영되지 않았다"고 안내합니다.
 
-> 코드: [`rewrite` (flush·fsync·replace·finally)](../budget_app/storage.py#L69-L78)
+> 코드: [`rewrite` (flush·fsync·replace·finally)](../budget_app/storage.py#L121-L130 "at:0,9:tmp = self.tmp_path")
+
+**Q10-1. 그러면 고치던 내용은 결국 날아가는 것 아닌가요? 그게 안전한 건가요?**
+네, 고치던 그 한 건은 반영되지 않습니다. 이 방식이 지키는 것은 진행 중이던 수정이 아니라 **나머지 전부**입니다. 원본을 직접 덮어쓰다 꺼지면 중단 지점 이후의 다른 거래까지 깨지지만, 임시 파일 방식은 파일이 항상 "수정 전 전체" 아니면 "수정 후 전체"입니다(원자성). `[수정 완료]` 는 교체 뒤에만 출력되므로 "됐다고 했는데 안 돼 있는" 일이 없고, 중단된 사실은 다음 실행 때 안내합니다.
+
+> 코드: [`rewrite`](../budget_app/storage.py#L114-L130 "sym:JsonlFile.rewrite") · [`clear_stale_tmp`](../budget_app/storage.py#L31-L39 "sym:JsonlFile.clear_stale_tmp") · [`initialize`](../budget_app/service.py#L113-L135 "sym:BudgetService.initialize") · [테스트](../tests/test_app.py#L255-L266 "sym:AppTest.test_interrupted_rewrite_is_reported_and_original_kept")
+
+**Q10-2. 중단된 수정을 프로그램이 알아서 마저 해 줘야 하지 않나요?**
+일부러 하지 않았습니다. 사용자는 완료 메시지를 못 봤으니 안 된 것으로 알고 있습니다. 나중에 몰래 반영되면 예상과 어긋나고, 이미 다시 실행했다면 두 번 적용됩니다. 데이터베이스도 완료 응답 전에 끊긴 작업은 취소합니다. 자동 복구가 책임질 범위는 "완료했다고 알려 준 것은 잃지 않는다"와 "무슨 일이 있었는지 알려 준다"입니다. 그래서 중단을 감지해 안내하고, 더 큰 사고에 대비해 `backup`/`restore` 를 제공합니다.
+
+> 코드: [`initialize`](../budget_app/service.py#L113-L135 "sym:BudgetService.initialize") · [`restore`](../budget_app/service.py#L365-L378 "sym:BudgetService.restore") · [`cmd_restore`](../budget_app/cli.py#L168-L178 "sym:cmd_restore")
+
+**Q10-3. add는 왜 임시 파일 방식이 아닌가요?**
+두 가지 이유입니다. ① 비용: 임시 파일 방식은 한 건을 추가하려고 파일 전체를 다시 써야 합니다(10만 건이면 150바이트 때문에 14MB). 끝에 붙이기는 파일 크기와 무관하게 한 줄만 씁니다. ② 피해 범위: 끝에 붙이기는 **이미 있는 데이터를 건드리지 않습니다.** 중단돼도 깨질 수 있는 것은 마지막 한 줄뿐이고 위치도 항상 파일 끝입니다. 제자리 덮어쓰기는 기존 데이터 한가운데를 건드려 어디까지 깨졌는지 알 수 없다는 점이 다릅니다. 그래서 복구도 기계적으로 가능합니다. 다음 실행 때 파일이 줄바꿈으로 끝나지 않으면 마지막 쓰기가 끊긴 것으로 보고, 그 줄만 떼어 낸 뒤 무엇이 빠졌는지 안내합니다. 데이터베이스의 로그 파일이 쓰는 방식과 같습니다(끝에만 쓰고, 재시작 때 잘린 꼬리를 정리). `[저장 완료]` 전에 `fsync` 로 디스크까지 확정합니다.
+
+> 코드: [`append`](../budget_app/storage.py#L105-L112 "sym:JsonlFile.append") · [`repair_torn_tail`](../budget_app/storage.py#L41-L73 "sym:JsonlFile.repair_torn_tail") · [테스트](../tests/test_app.py#L268-L281 "sym:AppTest.test_torn_last_line_is_repaired_and_reported")
+
+**Q10-5. 마지막 줄은 자동으로 고치면서 중간 줄이 깨지면 왜 멈추나요?**
+원인을 아는지의 차이입니다. 마지막 줄이 줄바꿈 없이 끝난 것은 "추가 도중 중단"으로만 생기고, 떼어 내도 잃는 것은 어차피 저장되지 않은 그 한 건뿐입니다. 중간 줄 손상은 추가 중단으로는 생길 수 없어(끝에만 쓰므로) 직접 편집 실수나 디스크 문제일 수 있고, 무엇을 잃는지 프로그램이 판단할 수 없습니다. 조용히 지우면 데이터가 사라진 것을 사용자가 모르게 되므로, 줄 번호를 알려 주고 멈춥니다.
+
+> 코드: [`repair_torn_tail`](../budget_app/storage.py#L41-L73 "sym:JsonlFile.repair_torn_tail") · [`iter_records` 의 손상 감지](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records") · [테스트](../tests/test_app.py#L320-L327 "sym:AppTest.test_corrupted_file_reports_cause_and_hint")
+
+**Q10-4. 백업은 어떻게 되돌리나요?**
+`restore` 가 가장 최근 백업으로 되돌립니다(`--name` 으로 지정, `--list` 로 목록). 되돌리기 전에 현재 상태를 자동으로 백업하므로 잘못 복원해도 다시 돌아올 수 있습니다. 복원도 파일마다 임시 파일에 복사한 뒤 교체하므로 도중에 중단돼도 반쯤 복사된 파일이 남지 않습니다.
+
+> 코드: [`restore_data`](../budget_app/storage.py#L268-L281 "sym:restore_data") · [`restore`](../budget_app/service.py#L365-L378 "sym:BudgetService.restore") · [테스트](../tests/test_app.py#L234-L253 "sym:AppTest.test_restore_brings_back_backup_and_is_undoable")
 
 **Q11. 저장 파일의 한 줄이 깨져 있으면요?**
 `json.loads` 실패를 잡아 `[오류] 저장 파일이 손상되었습니다: 경로 N번째 줄` 과 복구 힌트를 출력하고 종료 코드 1로 끝납니다. 조용히 건너뛰면 데이터가 사라진 걸 모르게 되므로 일부러 멈춥니다.
 
-> 코드: [`iter_records` 오류 처리](../budget_app/storage.py#L43-L54) · [테스트](../tests/test_app.py#L248-L255)
+> 코드: [`iter_records` 오류 처리](../budget_app/storage.py#L91-L102 "at:1,10:record = json.loads(line)") · [테스트](../tests/test_app.py#L320-L327 "sym:AppTest.test_corrupted_file_reports_cause_and_hint")
 
 ## C. 제너레이터
 
 **Q12. 제너레이터를 어디에 썼고, 왜 썼나요?**
 `JsonlFile.iter_records`, `TransactionRepository.iter_all`, `BudgetService.iter_filtered`, `BudgetStore.iter_all`, 그리고 `rewrite_each` 안의 `transformed` 입니다. 거래가 계속 쌓이는 파일을 통째로 메모리에 올리지 않기 위해서입니다.
 
-> 코드: [`iter_records`](../budget_app/storage.py#L35-L55) · [`iter_all`](../budget_app/storage.py#L85-L93) · [`iter_filtered`](../budget_app/service.py#L225-L227) · [`BudgetStore.iter_all`](../budget_app/storage.py#L158-L160) · [`transformed`](../budget_app/storage.py#L117-L126)
+> 코드: [`iter_records`](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records") · [`iter_all`](../budget_app/storage.py#L137-L145 "sym:TransactionRepository.iter_all") · [`iter_filtered`](../budget_app/service.py#L247-L249 "sym:BudgetService.iter_filtered") · [`BudgetStore.iter_all`](../budget_app/storage.py#L210-L212 "sym:BudgetStore.iter_all") · [`transformed`](../budget_app/storage.py#L169-L178 "sym:TransactionRepository.rewrite_each.transformed")
 
 **Q13. `return 리스트` 와 `yield` 의 차이를 이 코드로 설명해 보세요.**
 리스트로 돌려주면 모든 줄을 읽어 객체로 만든 뒤에야 첫 건을 쓸 수 있고 메모리도 전체만큼 듭니다. `yield` 는 한 건 만들 때마다 넘겨주고 멈추므로, 받는 쪽이 필요한 만큼만 꺼내 쓸 수 있습니다. `get(id)` 는 `next(...)` 로 찾는 즉시 멈춰서 뒤는 읽지도 않습니다.
 
-> 코드: [`get` (찾으면 즉시 멈춤)](../budget_app/storage.py#L107-L108) · [`iter_records`](../budget_app/storage.py#L35-L55)
+> 코드: [`get` (찾으면 즉시 멈춤)](../budget_app/storage.py#L159-L160 "sym:TransactionRepository.get") · [`iter_records`](../budget_app/storage.py#L83-L103 "sym:JsonlFile.iter_records")
 
 **Q14. list는 최신순인데, 정렬하려면 전부 읽어야 하지 않나요?**
 전부 **훑기는** 하지만 전부 **들고 있지는** 않습니다. `heapq.nlargest(limit, 제너레이터, key=...)` 는 지금까지 본 것 중 상위 N건만 유지하고 나머지는 버립니다. 메모리는 N건, 시간은 대략 전체 건수 × log N 입니다. 파일은 입력 순서대로 쌓이고 과거 날짜도 추가할 수 있어서, 파일 끝 N줄만 읽는 방식은 "날짜 최신순"이 되지 않습니다.
 
-> 코드: [`recent`](../budget_app/service.py#L229-L233) · [정렬 기준 `_newest_first`](../budget_app/service.py#L93-L94) · [테스트](../tests/test_app.py#L76-L80)
+> 코드: [`recent`](../budget_app/service.py#L251-L255 "sym:BudgetService.recent") · [정렬 기준 `_newest_first`](../budget_app/service.py#L101-L102 "sym:_newest_first") · [테스트](../tests/test_app.py#L76-L80 "sym:AppTest.test_list_is_newest_first_with_limit")
 
 **Q15. search도 스트리밍인가요?**
 필터링까지는 스트리밍입니다. `--limit` 을 주면 list와 같은 방식으로 N건만 유지합니다. `--limit` 없이 전체를 최신순으로 보여 줄 때는 정렬 때문에 **조건을 통과한 결과만** 메모리에 올립니다. 파일 전체가 아니라는 점이 차이이고, 이 한계는 README에 적어 두었습니다.
 
-> 코드: [`search`](../budget_app/service.py#L235-L241) · [`SearchFilter.matches`](../budget_app/service.py#L45-L61) · [테스트](../tests/test_app.py#L82-L95)
+> 코드: [`search`](../budget_app/service.py#L257-L263 "sym:BudgetService.search") · [`SearchFilter.matches`](../budget_app/service.py#L53-L69 "sym:SearchFilter.matches") · [테스트](../tests/test_app.py#L82-L95 "sym:AppTest.test_search_filters")
 
 **Q16. 제너레이터를 두 번 순회하면요?**
 두 번째에는 아무것도 안 나옵니다. 그래서 필요할 때마다 `iter_all()` 을 다시 호출합니다.
 
-> 코드: [`iter_all`](../budget_app/storage.py#L85-L93)
+> 코드: [`iter_all`](../budget_app/storage.py#L137-L145 "sym:TransactionRepository.iter_all")
 
 **Q17. 읽으면서 같은 파일에 쓰면 문제 없나요?**
 읽는 건 원본, 쓰는 건 `.tmp` 라 서로 다른 파일입니다. 읽기가 끝나 원본이 닫힌 뒤에 교체합니다.
 
-> 코드: [`rewrite`](../budget_app/storage.py#L62-L78)
+> 코드: [`rewrite`](../budget_app/storage.py#L114-L130 "sym:JsonlFile.rewrite")
 
 ## D. 데코레이터
 
 **Q18. 어떤 데코레이터를 만들었고 어디에 적용했나요?**
 `handle_errors`(예외 → 원인+힌트 출력+종료 코드)를 `cli.main` 에, `log_timed`(실행 로그+시간 측정)를 서비스의 `search`, `recent`, `summarize`, `update_transaction`, `delete_transaction`, `import_csv`, `export_csv`, `remove_category`, `apply_recurring` 에 적용했습니다.
 
-> 코드: [`handle_errors`](../budget_app/decorators.py#L19-L40) · [`log_timed`](../budget_app/decorators.py#L43-L55) · [`main` 에 적용](../budget_app/cli.py#L298-L299) · [`search` 에 적용](../budget_app/service.py#L235-L236)
+> 코드: [`handle_errors`](../budget_app/decorators.py#L19-L40 "sym:handle_errors") · [`log_timed`](../budget_app/decorators.py#L43-L55 "sym:log_timed") · [`main` 에 적용](../budget_app/cli.py#L315-L316 "at:0,1:@handle_errors") · [`search` 에 적용](../budget_app/service.py#L257-L258 "at:1,0:def search(self, flt: SearchFilter, limit: int &#124; None = None) -&gt; list[Transaction]:")
 
 **Q19. 데코레이터 없이 하면 어떻게 되나요?**
 모든 명령 함수마다 같은 `try/except` 와 시간 측정 코드를 복사해야 합니다. 문구 하나 바꾸려면 전부 고쳐야 하고, 하나라도 빠뜨리면 그 명령만 스택트레이스가 나옵니다.
 
-> 코드: [`handle_errors`](../budget_app/decorators.py#L19-L40)
+> 코드: [`handle_errors`](../budget_app/decorators.py#L19-L40 "sym:handle_errors")
 
 **Q20. `@handle_errors` 가 붙으면 내부적으로 어떻게 동작하나요?**
 `main = handle_errors(main)` 과 같습니다. 이후 `main()` 을 부르면 실제로는 `wrapper` 가 실행되고, 그 안에서 `try` 로 원래 `main` 을 호출합니다. 예외가 나면 종류별로 메시지와 종료 코드를 정합니다.
 
-> 코드: [`wrapper`](../budget_app/decorators.py#L23-L38) · [`@handle_errors def main`](../budget_app/cli.py#L298-L299)
+> 코드: [`wrapper`](../budget_app/decorators.py#L23-L38 "at:0,15:def wrapper(*args: P.args, **kwargs: P.kwargs) -&gt; int:") · [`@handle_errors def main`](../budget_app/cli.py#L315-L316 "at:0,1:@handle_errors")
 
 **Q21. `functools.wraps` 는 왜 쓰나요?**
 감싼 뒤에도 `func.__name__` 이 원래 이름으로 남게 합니다. `log_timed` 가 로그에 함수 이름을 찍는데, 없으면 전부 `wrapper` 로 나옵니다.
 
-> 코드: [`functools.wraps` 와 `func.__name__`](../budget_app/decorators.py#L46-L49)
+> 코드: [`functools.wraps` 와 `func.__name__`](../budget_app/decorators.py#L46-L49 "at:1,2:def wrapper(*args: P.args, **kwargs: P.kwargs) -&gt; R:")
 
 **Q22. `--verbose` 가 없을 때 `log_timed` 는 어떻게 되나요?**
 여전히 실행되지만 로그 레벨이 DEBUG라 출력되지 않습니다. `--verbose` 일 때만 `logging.basicConfig(level=DEBUG)` 로 켭니다.
 
-> 코드: [`--verbose` 일 때만 로그 켜기](../budget_app/cli.py#L301-L302) · [`log_timed`](../budget_app/decorators.py#L43-L55)
+> 코드: [`--verbose` 일 때만 로그 켜기](../budget_app/cli.py#L318-L319 "at:0,1:if args.verbose:") · [`log_timed`](../budget_app/decorators.py#L43-L55 "sym:log_timed")
 
 ## E. 타입 힌트
 
 **Q23. 타입 힌트로 얻은 이점을 코드 예로 설명해 주세요.**
 `get(tx_id: str) -> Transaction | None` 은 "없을 수 있다"를 시그니처로 알려 줍니다. 그래서 서비스에 `_require_transaction` 을 두어 `None` 이면 `AppError` 로 바꾸고, 그 뒤 코드는 항상 `Transaction` 이라고 믿고 씁니다. 또 `iter_all() -> Iterator[Transaction]` 은 리스트가 아니라 흐름이라는 걸 알려 줘서 `len()` 이나 인덱싱을 하면 안 된다는 걸 알 수 있습니다.
 
-> 코드: [`get -> Transaction | None`](../budget_app/storage.py#L107-L108) · [`_require_transaction`](../budget_app/service.py#L180-L184) · [`iter_all -> Iterator[Transaction]`](../budget_app/storage.py#L85-L93)
+> 코드: [`get -> Transaction | None`](../budget_app/storage.py#L159-L160 "sym:TransactionRepository.get") · [`_require_transaction`](../budget_app/service.py#L202-L206 "sym:BudgetService._require_transaction") · [`iter_all -> Iterator[Transaction]`](../budget_app/storage.py#L85-L93)
 
 **Q24. 타입 힌트가 틀리면 실행 중에 오류가 나나요?**
 아니요. 파이썬은 실행 중에 검사하지 않습니다. 그래서 외부에서 들어온 값(사용자 입력, 파일, CSV)은 `parse_date`, `parse_amount` 같은 검증 함수로 **직접** 확인합니다.
 
-> 코드: [`parse_*` 검증 함수](../budget_app/models.py#L20-L66) · [`from_dict`](../budget_app/models.py#L85-L95)
+> 코드: [`parse_*` 검증 함수](../budget_app/models.py#L20-L66 "at:0,46:def parse_date(text: str) -&gt; str:") · [`from_dict`](../budget_app/models.py#L85-L95 "sym:Transaction.from_dict")
 
 **Q25. `ask(prompt: str, parse: Callable[[str], T]) -> T` 의 `T` 는 뭔가요?**
 "어떤 타입이든 되지만 같은 타입"이라는 표시입니다. `parse_amount` 를 넘기면 결과가 `int`, `parse_date` 를 넘기면 `str` 이 된다는 걸 표현합니다.
 
-> 코드: [`ask`](../budget_app/cli.py#L29-L37) · [사용 예 `cmd_add`](../budget_app/cli.py#L52-L60)
+> 코드: [`ask`](../budget_app/cli.py#L29-L37 "sym:ask") · [사용 예 `cmd_add`](../budget_app/cli.py#L52-L60 "sym:cmd_add")
 
 ## F. 검증과 오류 처리
 
 **Q26. 입력 검증은 어디서 하나요?**
 값 하나의 형식(날짜, 금액, 타입)은 `models.py` 의 `parse_*` 함수, 데이터가 필요한 규칙(카테고리 존재 여부, id 존재 여부)은 서비스에서 합니다. `add` 는 틀리면 그 항목만 다시 묻고, 옵션 방식 명령은 오류 메시지를 내고 종료합니다.
 
-> 코드: [`parse_*`](../budget_app/models.py#L20-L66) · [`require_category`](../budget_app/service.py#L117-L125) · [`_require_transaction`](../budget_app/service.py#L180-L184) · [재입력 `ask`](../budget_app/cli.py#L29-L37)
+> 코드: [`parse_*`](../budget_app/models.py#L20-L66 "at:0,46:def parse_date(text: str) -&gt; str:") · [`require_category`](../budget_app/service.py#L139-L147 "sym:BudgetService.require_category") · [`_require_transaction`](../budget_app/service.py#L202-L206 "sym:BudgetService._require_transaction") · [재입력 `ask`](../budget_app/cli.py#L29-L37 "sym:ask")
 
 **Q27. `2024-02-30` 이나 `2024-1-5` 는 어떻게 걸러지나요?**
 `datetime.strptime` 이 존재하지 않는 날짜를 거부합니다. `2024-1-5` 는 strptime이 통과시키기 때문에, 다시 `YYYY-MM-DD` 로 포맷한 결과가 입력과 같은지 비교해 걸러냅니다. 날짜를 문자열로 비교(기간 검색)하므로 자릿수가 꼭 맞아야 합니다.
 
-> 코드: [`parse_date`](../budget_app/models.py#L20-L28)
+> 코드: [`parse_date`](../budget_app/models.py#L20-L28 "sym:parse_date")
 
 **Q28. 날짜를 문자열로 비교해도 되나요?**
 `YYYY-MM-DD` 는 큰 단위가 앞에 있고 자릿수가 고정이라, 사전순 비교가 곧 날짜순입니다. 그래서 검증에서 형식을 엄격히 맞춥니다.
 
-> 코드: [`SearchFilter.matches` 의 날짜 비교](../budget_app/service.py#L46-L52)
+> 코드: [`SearchFilter.matches` 의 날짜 비교](../budget_app/service.py#L54-L60 "at:0,6:# 날짜가 YYYY-MM-DD 문자열이라 문자열 비교가 곧 날짜 비교다.")
 
 **Q29. 스택트레이스가 절대 안 나온다고 어떻게 보장하나요?**
 `handle_errors` 가 `AppError`, 입력 중단, `OSError` 뿐 아니라 마지막에 `Exception` 전체를 잡습니다. 예상 못 한 오류도 한 줄 원인과 힌트로 끝나고, 자세한 내용은 `--verbose` 로그로만 봅니다.
 
-> 코드: [`except Exception`](../budget_app/decorators.py#L35-L38) · [테스트](../tests/test_app.py#L141-L158)
+> 코드: [`except Exception`](../budget_app/decorators.py#L35-L38 "at:0,3:except Exception as exc:  # 예상 못 한 오류도 스택트레이스 없이 끝낸다.") · [테스트](../tests/test_app.py#L141-L158 "sym:AppTest.test_missing_id_and_invalid_update_fail_without_change")
 
 **Q30. 종료 코드는 어떻게 정했나요?**
 0 정상, 1 입력/데이터 오류, 2 파일 시스템 오류와 잘못된 옵션(argparse 기본값), 3 예상 못 한 오류, 130 입력 중단입니다. `main` 이 정수를 돌려주고 `sys.exit()` 에 넘깁니다.
 
-> 코드: [종료 코드 결정](../budget_app/decorators.py#L24-L38) · [`sys.exit(main())`](../budget_app/__main__.py#L7-L11)
+> 코드: [종료 코드 결정](../budget_app/decorators.py#L24-L38 "at:2,12:except AppError as exc:") · [`sys.exit(main())`](../budget_app/__main__.py#L7-L11 "at:0,4:if __name__ == &quot;__main__&quot;:")
 
 **Q31. update에 잘못된 값을 주면 파일이 일부만 바뀌나요?**
 아니요. 모든 값을 검증해 새 객체를 만든 **뒤에** 파일을 다시 씁니다. 검증에서 실패하면 파일을 열지도 않습니다. 테스트 `test_missing_id_and_invalid_update_fail_without_change` 가 이를 확인합니다.
 
-> 코드: [`update_transaction` (검증 후 재작성)](../budget_app/service.py#L197-L214) · [테스트](../tests/test_app.py#L141-L158)
+> 코드: [`update_transaction` (검증 후 재작성)](../budget_app/service.py#L219-L236 "at:0,17:current = self._require_transaction(tx_id)") · [테스트](../tests/test_app.py#L141-L158 "sym:AppTest.test_missing_id_and_invalid_update_fail_without_change")
 
 ## G. 기능별
 
 **Q32. summary는 어떻게 계산하나요?**
 그 달의 거래를 흘려보내며 수입/지출 합계와 카테고리별 지출 딕셔너리를 누적합니다. TOP N은 `heapq.nlargest` 로 뽑고, 예산이 있으면 `지출 / 예산 × 100` 을 사용률로, `지출 > 예산` 이면 경고를 출력합니다.
 
-> 코드: [`summarize`](../budget_app/service.py#L243-L258) · [`usage_percent`·`over_budget`](../budget_app/service.py#L77-L83) · [테스트](../tests/test_app.py#L99-L117)
+> 코드: [`summarize`](../budget_app/service.py#L265-L280 "sym:BudgetService.summarize") · [`usage_percent`·`over_budget`](../budget_app/service.py#L85-L91 "span:Summary.usage_percent..Summary") · [테스트](../tests/test_app.py#L99-L117 "sym:AppTest.test_summary_with_budget_and_warning")
 
 **Q33. 사용 중인 카테고리를 삭제하면요?**
 기본은 차단하고 몇 건이 사용 중인지와 해결 방법을 알려 줍니다. `--replace-with` 를 주면 해당 거래(와 반복 내역)를 대체 카테고리로 옮긴 뒤 삭제합니다. 과제의 두 선택지를 모두 지원합니다.
 
-> 코드: [`remove_category`](../budget_app/service.py#L134-L161) · [테스트](../tests/test_app.py#L162-L177)
+> 코드: [`remove_category`](../budget_app/service.py#L156-L183 "sym:BudgetService.remove_category") · [테스트](../tests/test_app.py#L162-L177 "sym:AppTest.test_category_management")
 
 **Q34. import에서 잘못된 행이 있으면요?**
 그 행만 건너뛰고 `skipped` 로 세며 행 번호와 사유를 출력합니다. 올바른 행은 등록합니다. 헤더에 필수 컬럼이 없으면 한 건도 넣지 않고 오류로 끝냅니다.
 
-> 코드: [`import_csv`](../budget_app/service.py#L297-L333) · [테스트](../tests/test_app.py#L201-L220)
+> 코드: [`import_csv`](../budget_app/service.py#L319-L355 "sym:BudgetService.import_csv") · [테스트](../tests/test_app.py#L201-L220 "sym:AppTest.test_import_skips_bad_rows")
 
 **Q35. CSV에서 태그의 쉼표는 어떻게 구분하나요?**
 `csv` 모듈이 쉼표가 든 값을 자동으로 따옴표로 감쌉니다(`"meal,daily"`). 읽을 때도 `csv.DictReader` 가 하나의 값으로 되돌려 줍니다. 직접 `split(",")` 을 하지 않은 이유입니다.
 
-> 코드: [`export_csv` 의 csv.writer](../budget_app/service.py#L290-L294) · [`import_csv` 의 csv.DictReader](../budget_app/service.py#L305-L306)
+> 코드: [`export_csv` 의 csv.writer](../budget_app/service.py#L312-L316 "at:0,4:with out.open(&quot;w&quot;, encoding=&quot;utf-8&quot;, newline=&quot;&quot;) as f:") · [`import_csv` 의 csv.DictReader](../budget_app/service.py#L327-L328 "at:0,1:with source.open(&quot;r&quot;, encoding=&quot;utf-8-sig&quot;, newline=&quot;&quot;) as f:")
 
 **Q36. export에 기간 조건이 왜 필수인가요?**
 과제 요구사항이고, 실수로 전체를 내보내는 것을 막습니다. 조건이 없으면 오류와 사용법 힌트를 출력합니다.
 
-> 코드: [기간 조건 검사](../budget_app/service.py#L282-L286) · [`build_period_filter`](../budget_app/service.py#L269-L278)
+> 코드: [기간 조건 검사](../budget_app/service.py#L304-L308 "at:0,4:if not (flt.month or flt.date_from or flt.date_to):") · [`build_period_filter`](../budget_app/service.py#L291-L300 "sym:BudgetService.build_period_filter")
 
 **Q37. 반복 내역을 같은 달에 두 번 적용하면요?**
 생성된 거래에 `recurring:RC-0001` 태그를 붙여 둡니다. 다시 적용할 때 그 달에 이 태그가 있으면 건너뜁니다. 31일 규칙은 `calendar.monthrange` 로 구한 말일로 보정합니다.
 
-> 코드: [`apply_recurring`](../budget_app/service.py#L366-L402) · [테스트](../tests/test_app.py#L234-L244)
+> 코드: [`apply_recurring`](../budget_app/service.py#L406-L442 "sym:BudgetService.apply_recurring") · [테스트](../tests/test_app.py#L306-L316 "sym:AppTest.test_recurring_apply_is_idempotent_and_clamps_day")
 
 **Q38. 표 정렬은 어떻게 했나요? 한글이 섞이면 줄이 안 맞지 않나요?**
 한글은 터미널에서 2칸을 차지합니다. `unicodedata.east_asian_width` 로 실제 표시 폭을 계산해 공백을 채웁니다. `len()` 이나 `ljust()` 만 쓰면 한글이 있는 줄이 밀립니다.
 
-> 코드: [`display_width`](../budget_app/formatter.py#L13-L15) · [`format_table`](../budget_app/formatter.py#L23-L30)
+> 코드: [`display_width`](../budget_app/formatter.py#L13-L15 "sym:display_width") · [`format_table`](../budget_app/formatter.py#L23-L30 "sym:format_table")
 
 ## H. 한계와 개선
 
 **Q39. 이 프로그램의 한계는 무엇인가요?**
 ① `--limit` 없는 search와 export는 결과를 메모리에 올립니다. ② 동시 실행을 위한 파일 잠금이 없습니다. ③ 수정/삭제는 매번 파일 전체를 다시 씁니다. ④ id를 찾으려면 파일을 처음부터 훑습니다.
 
-> 코드: [정렬 한계 주석](../budget_app/service.py#L239-L240) · [`next_number`](../budget_app/storage.py#L95-L98) · [`rewrite_each`](../budget_app/storage.py#L110-L129)
+> 코드: [정렬 한계 주석](../budget_app/service.py#L261-L262 "at:0,1:# ponytail: 최신순 정렬 때문에 &#x27;조건에 맞는 결과&#x27;는 메모리에 올린다(파일 전체는 아님).") · [`next_number`](../budget_app/storage.py#L147-L150 "sym:TransactionRepository.next_number") · [`rewrite_each`](../budget_app/storage.py#L162-L181 "sym:TransactionRepository.rewrite_each")
 
 **Q40. 데이터가 아주 커지면 어떻게 바꾸겠습니까?**
 월별로 파일을 나누면 summary/search가 해당 월 파일만 읽습니다. 그 이상이면 SQLite 같은 데이터베이스로 옮기는 게 맞습니다. 저장소 계층만 교체하면 되고 서비스/CLI는 그대로 둘 수 있도록 계층을 나눠 두었습니다.
@@ -667,9 +692,9 @@ def handle_errors(func):
 > 코드: [저장소 계층](../budget_app/storage.py) · [10만 건 실측과 개선안](EVALUATION.md#4-2-거래가-10만-건으로-늘어난다면-현재-구조에서-병목이-어디이며-어떻게-개선할지-설명할-수-있는가)
 
 **Q41. 테스트는 어떻게 했나요?**
-`tests/test_app.py` 에서 임시 폴더를 만들고 실제 진입점 `main()` 을 명령 인자와 가짜 입력으로 실행해, 출력·종료 코드·저장 파일 내용을 확인합니다. 16개 테스트가 필수 기능과 보너스, 오류 경로를 다룹니다.
+`tests/test_app.py` 에서 임시 폴더를 만들고 실제 진입점 `main()` 을 명령 인자와 가짜 입력으로 실행해, 출력·종료 코드·저장 파일 내용을 확인합니다. 21개 테스트가 필수 기능과 보너스, 오류 경로를 다루고, 문서의 코드 링크가 현재 코드와 맞는지도 검사합니다.
 
-> 코드: [`run_cli` 테스트 도우미](../tests/test_app.py#L23-L31) · [테스트 전체](../tests/test_app.py)
+> 코드: [`run_cli` 테스트 도우미](../tests/test_app.py#L23-L31 "sym:AppTest.run_cli") · [테스트 전체](../tests/test_app.py)
 
 ---
 
@@ -717,6 +742,10 @@ python -m budget_app category remove --name food
 
 ```bash
 python -m budget_app backup
+```
+
+```bash
+python -m budget_app restore --list
 ```
 
 ```bash

@@ -26,7 +26,15 @@ from .models import (
     parse_tags,
     parse_type,
 )
-from .storage import BudgetStore, CategoryStore, RecurringStore, TransactionRepository, backup_data
+from .storage import (
+    BudgetStore,
+    CategoryStore,
+    RecurringStore,
+    TransactionRepository,
+    backup_data,
+    list_backups,
+    restore_data,
+)
 
 CSV_COLUMNS = ["date", "type", "category", "amount", "memo", "tags"]
 CSV_REQUIRED = CSV_COLUMNS[:4]
@@ -105,6 +113,20 @@ class BudgetService:
     def initialize(self) -> list[str]:
         """저장 파일이 없으면 만든다. 사용자에게 알릴 안내 문구를 돌려준다."""
         notes: list[str] = []
+        stores = (self.transactions, self.categories, self.budgets, self.recurring)
+        interrupted = [s.file.path.name for s in stores if s.file.clear_stale_tmp()]
+        if interrupted:
+            notes.append(
+                f"이전 수정 작업이 중단되어 반영되지 않았습니다 ({', '.join(interrupted)}). "
+                "데이터는 수정 전 상태 그대로입니다. 필요하면 마지막 명령을 다시 실행하세요."
+            )
+        for store in stores:
+            fragment = store.file.repair_torn_tail()
+            if fragment is not None:
+                notes.append(
+                    f"{store.file.path.name} 의 마지막 줄이 저장 도중 끊겨 있어 떼어 냈습니다: {fragment[:80]!r}. "
+                    "다른 데이터는 그대로입니다. 마지막에 추가하던 내역은 저장되지 않았으니 다시 입력하세요."
+                )
         created = [s.file.path.name for s in (self.transactions, self.budgets, self.recurring) if s.file.ensure()]
         if self.categories.ensure():
             notes.append(f"기본 카테고리를 생성했습니다: {', '.join(self.categories.names())}")
@@ -336,6 +358,24 @@ class BudgetService:
 
     def backup(self) -> tuple[Path, int]:
         return backup_data(self.data_dir)
+
+    def backups(self) -> list[str]:
+        return list_backups(self.data_dir)
+
+    def restore(self, name: str | None = None) -> tuple[str, Path, int]:
+        """백업으로 되돌린다. name 이 없으면 가장 최근 백업.
+
+        되돌리기 전에 현재 상태를 먼저 백업해, 복원 자체도 취소할 수 있게 한다.
+        반환값: (복원한 백업 이름, 복원 직전 상태를 담은 백업 폴더, 복원한 파일 수)
+        """
+        names = self.backups()
+        if not names:
+            raise AppError("복원할 백업이 없습니다.", "먼저 backup 명령으로 백업을 만드세요.")
+        target = name or names[-1]
+        if target not in names:
+            raise AppError(f"없는 백업입니다: {target}", "restore --list 로 백업 이름을 확인하세요.")
+        safety, _ = backup_data(self.data_dir)
+        return target, safety, restore_data(self.data_dir, target)
 
     def add_recurring(
         self, day: str | int, type_: str, category: str, amount: str | int, memo: str = "", tags: str = ""

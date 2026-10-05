@@ -231,6 +231,78 @@ class AppTest(unittest.TestCase):
             (backups[0] / "transactions.jsonl").read_bytes(), (self.data / "transactions.jsonl").read_bytes()
         )
 
+    def test_restore_brings_back_backup_and_is_undoable(self) -> None:
+        self.assertNotEqual(self.run_cli("restore")[0], 0)  # 백업 없음
+        self.seed()
+        self.run_cli("backup")
+        saved = self.rows()
+        self.run_cli("delete", "--id", "TX-000001")
+        self.run_cli("category", "add", "--name", "hobby")
+        after_changes = self.rows()
+
+        code, out, _ = self.run_cli("restore")  # 가장 최근 백업으로
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.rows(), saved)
+        self.assertNotIn("- hobby", self.run_cli("category", "list")[1])
+
+        # 복원 직전 상태가 자동 백업되어 복원을 취소할 수 있다.
+        names = [line[2:] for line in self.run_cli("restore", "--list")[1].splitlines() if line.startswith("- ")]
+        self.assertEqual(len(names), 2)
+        self.assertEqual(self.run_cli("restore", "--name", names[-1])[0], 0)
+        self.assertEqual(self.rows(), after_changes)
+        self.assertNotEqual(self.run_cli("restore", "--name", "nope")[0], 0)
+
+    def test_interrupted_rewrite_is_reported_and_original_kept(self) -> None:
+        self.seed()
+        before = self.rows()
+        # 수정 도중 프로그램이 죽은 상황: 임시 파일만 남고 교체는 일어나지 않았다.
+        (self.data / "transactions.jsonl.tmp").write_text('{"id": "TX-0000', encoding="utf-8")
+        code, out, _ = self.run_cli("list")
+        self.assertEqual(code, 0)
+        self.assertIn("중단", out)
+        self.assertIn("transactions.jsonl", out)
+        self.assertEqual(self.rows(), before)
+        self.assertFalse((self.data / "transactions.jsonl.tmp").exists())
+        self.assertNotIn("중단", self.run_cli("list")[1])  # 안내는 한 번만
+
+    def test_torn_last_line_is_repaired_and_reported(self) -> None:
+        self.seed()
+        before = self.rows()
+        path = self.data / "transactions.jsonl"
+        # add 도중 전원이 꺼진 상황: 마지막 줄이 중간에서 끊기고 줄바꿈도 없다.
+        with path.open("a", encoding="utf-8") as f:
+            f.write('{"id": "TX-000006", "type": "expen')
+        code, out, _ = self.run_cli("list")
+        self.assertEqual(code, 0)
+        self.assertIn("끊겨", out)
+        self.assertIn("TX-000006", out)  # 무엇이 빠졌는지 보여 준다
+        self.assertEqual(self.rows(), before)
+        self.assertNotIn("끊겨", self.run_cli("list")[1])  # 안내는 한 번만
+        self.assertEqual(self.add("2024-03-01", "expense", "food", "1"), "TX-000006")
+
+    def test_complete_last_line_without_newline_is_kept(self) -> None:
+        self.seed()
+        path = self.data / "transactions.jsonl"
+        path.write_bytes(path.read_bytes().rstrip(b"\n"))  # 내용은 온전하고 줄바꿈만 빠진 경우
+        code, out, _ = self.run_cli("list")
+        self.assertEqual(code, 0)
+        self.assertNotIn("끊겨", out)
+        self.assertEqual(len(self.rows()), 5)
+        self.add("2024-03-01", "expense", "food", "1")  # 다음 추가가 앞줄에 이어 붙지 않아야 한다
+        self.assertEqual([r["id"] for r in self.rows()][-2:], ["TX-000005", "TX-000006"])
+
+    def test_docs_code_links_point_at_current_code(self) -> None:
+        # 코드를 고친 뒤 `python tools/relink.py` 를 안 돌리면 여기서 걸린다.
+        import subprocess
+        import sys
+
+        root = Path(__file__).resolve().parent.parent
+        result = subprocess.run(
+            [sys.executable, str(root / "tools" / "relink.py"), "--check"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_recurring_apply_is_idempotent_and_clamps_day(self) -> None:
         code, out, _ = self.run_cli("recurring", "add", inputs=["31", "expense", "rent", "500000", "월세", ""])
         self.assertIn("id=RC-0001", out)
@@ -257,7 +329,7 @@ class AppTest(unittest.TestCase):
     def test_help_for_every_command(self) -> None:
         commands = [
             [], ["add"], ["list"], ["search"], ["summary"], ["update"], ["delete"], ["import"], ["export"],
-            ["backup"], ["budget"], ["budget", "set"], ["budget", "show"],
+            ["backup"], ["restore"], ["budget"], ["budget", "set"], ["budget", "show"],
             ["category"], ["category", "add"], ["category", "list"], ["category", "remove"],
             ["recurring"], ["recurring", "add"], ["recurring", "list"], ["recurring", "remove"],
             ["recurring", "apply"],

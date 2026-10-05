@@ -165,6 +165,19 @@ def cmd_backup(svc: BudgetService, args: argparse.Namespace) -> None:
     print(f"[백업 완료] {target} ({count} files)")
 
 
+def cmd_restore(svc: BudgetService, args: argparse.Namespace) -> None:
+    if args.list:
+        names = svc.backups()
+        if not names:
+            print("[데이터 없음] 백업이 없습니다. (backup 명령으로 생성)")
+        for name in names:
+            print(f"- {name}")
+        return
+    name, safety, count = svc.restore(args.name)
+    print(f"[복원 완료] {name} ({count} files)")
+    print(f"[안내] 복원 직전 상태는 {safety.name} 으로 백업했습니다. (되돌리려면 restore --name {safety.name})")
+
+
 def cmd_recurring_add(svc: BudgetService, args: argparse.Namespace) -> None:
     def parse_day(text: str) -> int:
         if not text.strip().isdigit() or not 1 <= int(text) <= 31:
@@ -283,6 +296,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--to", dest="date_to", metavar="YYYY-MM-DD")
 
     command(sub, "backup", cmd_backup, "데이터 파일을 타임스탬프 폴더로 백업")
+
+    p = command(sub, "restore", cmd_restore, "백업으로 되돌리기 (기본: 가장 최근 백업)")
+    p.add_argument("--name", help="백업 이름 (예: 20240115-093000). 생략하면 가장 최근 백업")
+    p.add_argument("--list", action="store_true", help="백업 목록만 출력")
 
     recurring = group("recurring", "반복 내역(월급/월세 등) 관리")
     command(recurring, "add", cmd_recurring_add, "반복 내역 등록 (대화형)")
