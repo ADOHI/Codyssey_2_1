@@ -37,6 +37,18 @@ python -m budget_app add
 | `--data-dir <폴더>` | 저장 폴더 변경 (기본 `./data`) |
 | `--verbose` | 실행 로그와 소요 시간 출력 (데코레이터 `log_timed`) |
 
+### 시연 스크립트 (동료평가용)
+
+명령을 하나씩 입력하지 않고, 평가 항목 순서대로 전 기능을 자동으로 실행해 **명령 · 출력 · 종료 코드**를 보여 줍니다.
+
+```bash
+python demo.py
+```
+
+- 단계마다 Enter 로 진행합니다. 멈추지 않고 끝까지 보려면 `python demo.py --no-pause`
+- Windows 에서는 `demo.bat` 을 더블클릭해도 됩니다. Mac/Linux 는 `python3 demo.py`
+- 실제 데이터(`./data`)는 건드리지 않고 `./demo_data` 를 매번 새로 만들어 사용합니다.
+
 ### 테스트 실행
 
 ```bash
