@@ -7,7 +7,8 @@
 - Python 3.10 이상, **표준 라이브러리만** 사용 (`pip install` 불필요)
 - 저장 포맷: **JSONL** 고정 / `update`: **옵션 기반(안 A)** 고정 / 빈 카테고리: **기본 카테고리 자동 생성(안 A)** 고정
 
-> 동료평가용 예상 질문·개념 정리·답변은 [docs/QNA.md](docs/QNA.md) 에 있습니다.
+> 동료평가 문항(항목 1~5)별 답변과 코드 링크는 [docs/EVALUATION.md](docs/EVALUATION.md),
+> 예상 질문·개념 정리·답변은 [docs/QNA.md](docs/QNA.md) 에 있습니다.
 
 ---
 
